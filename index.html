@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="device-width, initial-scale=1.0">
+  <title>Color-mngr</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: inherit;
+      margin: 0;
+      padding: 0;
+    }
+
+    .desk {
+      display: flex;
+      align-items: center;
+      background-color: #f3f2f1;
+      padding: 1.5em;
+    }
+
+    .color {
+      --hue: 180;
+      --saturation: 50%;
+      --lightness: 50%;
+
+      flex-grow: 1;
+      height: calc(100vh - 1.5em * 2);
+      max-width: 50%;
+      color: hsl(var(--hue), var(--saturation), var(--lightness));
+      background-color: currentcolor;
+      border: 1px solid currentcolor;
+    }
+
+    .control {
+      flex-flow: row wrap;
+      text-align: center;
+    }
+
+    #add-slot {
+      font-size: 3em;
+      padding: 0 0.25em;
+      border: none;
+      background: none;
+      cursor: pointer;
+    }
+
+    #add-slot:hover {
+      background-color: #f3f2f1;
+    }
+
+    .hsl-picker {
+      font-size: 1em;
+      margin: 1.25em;
+      padding: 1.25em;
+      background-color: #f3f2f188;
+      color: #464646;
+    }
+
+    .hsl-picker > form  {
+      display: flex;
+      flex-flow: column;
+      gap: 0.375em;
+    }
+
+    input[type="range"] {
+      appearance: none;
+      height: 1.5em;
+      border-radius: 3em;
+      border: 2px solid currentcolor;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 1.5em;
+      height: 1.5em;
+      border: 0.1875em solid currentcolor;
+      border-radius: 50%;
+    }
+
+    #hue {
+      background: linear-gradient(
+        to right,
+        hsl(0, 100%, 50%) 0%,
+        hsl(30, 100%, 50%) 8.3%,
+        hsl(60, 100%, 50%) 16.6%,
+        hsl(90, 100%, 50%) 25%,
+        hsl(120, 100%, 50%) 33.3%,
+        hsl(150, 100%, 50%) 41.6%,
+        hsl(180, 100%, 50%) 50%,
+        hsl(210, 100%, 50%) 58.3%,
+        hsl(240, 100%, 50%) 66.6%,
+        hsl(270, 100%, 50%) 75%,
+        hsl(300, 100%, 50%) 83.3%,
+        hsl(330, 100%, 50%) 91.6%,
+        hsl(360, 100%, 50%) 100%
+      );
+    }
+
+    #saturation {
+      background: linear-gradient(
+        to right,
+        hsl(var(--hue), 0%, var(--lightness)) 0%,
+        hsl(var(--hue), 100%, var(--lightness)) 100%
+      );
+    }
+
+    #lightness {
+      background: linear-gradient(
+        to right,
+        hsl(var(--hue), var(--saturation), 0%) 0%,
+        hsl(var(--hue), var(--saturation), 50%) 50%,
+        hsl(var(--hue), var(--saturation), 100%) 100%
+      );
+    }
+  </style>
+</head>
+<body>
+  <main class="desk">
+    <div class="color">
+      <section class="hsl-picker">
+        <form>
+          <label for="hue">Hue</label>
+          <input type="range" value="180" min="0" max="360" step="0.5" name="hue" id="hue" />
+
+          <label for="saturation">Saturation</label>
+          <input type="range" value="50" min="0" max="100" step="0.5" name="saturation" id="saturation" />
+
+          <label for="lightness">Lightness</label>
+          <input type="range" value="50" min="0" max="100" step="0.5" name="lightness" id="lightness" />
+        </form>
+      </section>
+    </div>
+    <div class="control">
+      <button id="add-slot">+</button>
+    </div>
+  <main>
+
+  <script>
+    const colorSlot = document.querySelector('.color')
+    colorSlot.querySelectorAll('[type="range"]').forEach(
+      input => {
+        input.addEventListener('input', event => {
+          let {name, value} = event.target
+          if (event.target.name !== 'hue') {
+            value = `${value}%`
+          }
+
+          colorSlot.style.setProperty(`--${name}`, value)
+          //console.log(colorSlot.style)
+        })
+      }
+    )
+
+    const addColorSlot = event => {
+      const newSlot = event.target.parentElement.previousElementSibling.cloneNode('deep')
+      event.target.parentElement.parentElement.insertBefore(
+        newSlot,
+        event.target.parentElement
+      )
+    }
+
+    document.querySelector('#add-slot').addEventListener('click', addColorSlot)
+  </script>
+</body>
+</html>
