@@ -263,7 +263,7 @@
     }
 
     const fillFromHEX = input => {
-      const colorSlot = input.parentElement.parentElement.parentElement;
+      const colorSlot = input.parentElement.parentElement.parentElement.parentNode;
 
       input.addEventListener('input', e => {
         const [h,s,l] = HEX2HSL(input.value);
