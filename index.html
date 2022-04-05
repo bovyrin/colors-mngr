@@ -63,9 +63,19 @@
       gap: 0.375em;
     }
 
+    form > div {
+      display: flex;
+      flex-flow: row wrap;
+    }
+
+    form label {
+      flex: 1 0 100%;
+    }
+
     input[type="range"] {
       appearance: none;
       height: 1.5em;
+      flex: 1;
       border-radius: 3em;
       border: 2px solid currentcolor;
     }
@@ -113,6 +123,16 @@
         hsl(var(--hue), var(--saturation), 100%) 100%
       );
     }
+
+    #hex {
+      font-size: 1.25em;
+      max-width: 6em;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 0.25em;
+      border: none;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -120,14 +140,27 @@
     <div class="color">
       <section class="hsl-picker">
         <form>
-          <label for="hue">Hue</label>
-          <input type="range" value="180" min="0" max="360" step="0.5" name="hue" id="hue" />
+          <div>
+            <input type="text" value="#" name="hex" id="hex" />
+          </div>
 
-          <label for="saturation">Saturation</label>
-          <input type="range" value="50" min="0" max="100" step="0.5" name="saturation" id="saturation" />
+          <div>
+            <label for="hue">Hue</label>
+            <input type="range" value="180" min="0" max="360" step="0.5" name="hue" id="hue" />
+            <input type="number" value="180" min="0" max="360" step="0.5" name="hue" id="hue-num" />
+          </div>
 
-          <label for="lightness">Lightness</label>
-          <input type="range" value="50" min="0" max="100" step="0.5" name="lightness" id="lightness" />
+          <div>
+            <label for="saturation">Saturation</label>
+            <input type="range" value="50" min="0" max="100" step="0.5" name="saturation" id="saturation" />
+            <input type="number" value="50" min="0" max="100" step="0.5" name="saturation" id="saturation-num" />
+          </div>
+
+          <div>
+            <label for="lightness">Lightness</label>
+            <input type="range" value="50" min="0" max="100" step="0.5" name="lightness" id="lightness" />
+            <input type="number" value="50" min="0" max="100" step="0.5" name="lightness" id="lightness-num" />
+          </div>
         </form>
       </section>
     </div>
@@ -137,23 +170,130 @@
   <main>
 
   <script>
-    const colorSlot = document.querySelector('.color')
-    colorSlot.querySelectorAll('[type="range"]').forEach(
-      input => {
-        input.addEventListener('input', event => {
-          let {name, value} = event.target
-          if (event.target.name !== 'hue') {
-            value = `${value}%`
-          }
+    const HEX2HSL = x => {
+      let r = 0;
+      let g = 0;
+      let b = 0;
 
-          colorSlot.style.setProperty(`--${name}`, value)
-          //console.log(colorSlot.style)
-        })
+      if (x.length == 4) {
+        r = "0x" + x[1] + x[1];
+        g = "0x" + x[2] + x[2];
+        b = "0x" + x[3] + x[3];
+      } else if (x.length == 7) {
+        r = "0x" + x[1] + x[2];
+        g = "0x" + x[3] + x[4];
+        b = "0x" + x[5] + x[6];
       }
-    )
+
+      r /= 255;
+      g /= 255;
+      b /= 255;
+
+      let cmin = Math.min(r,g,b);
+      let cmax = Math.max(r,g,b);
+      let delta = cmax - cmin;
+      let h, s, l = (cmax + cmin) / 2;
+
+      if (cmax == cmin) {
+        h = s = 0; // achromatic
+      } else {
+        let d = cmax - cmin;
+        s = l > 0.5 ? d / (2 - cmax - cmin) : d / (cmax + cmin);
+        switch (cmax) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+
+      s = s * 100;
+      s = Math.round(s);
+      l = l * 100;
+      l = Math.round(l);
+      h = Math.round(360 * h);
+
+      return [h, s, l];
+    }
+
+    const HSL2HEX = (h, s, l) => {
+      s /= 100;
+      l /= 100;
+
+      let a = s * Math.min(l, 1 - l);
+      let f = n => {
+        let k = (n + h / 30) % 12;
+        let x = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+        return Math.round(x * 255).toString(16).padStart(2, '0');
+      }
+
+      return [f(0), f(8), f(4)];
+    }
+
+    const recomputeHEXValue = el => {
+      let styles = getComputedStyle(el);
+      let h = styles.getPropertyValue('--hue');
+      let s = styles.getPropertyValue('--saturation').replace('%', '');
+      let l = styles.getPropertyValue('--lightness').replace('%', '');
+      el.querySelector('#hex').value = '#' + HSL2HEX(h, s, l).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', e => {
+      recomputeHEXValue(document.querySelector('.color'))
+    });
+
+    const changeColor = input => {
+      const colorSlot = input.parentElement.parentElement.parentElement.parentElement;
+
+      input.addEventListener('input', event => {
+        let {name, value} = event.target
+
+        colorSlot.querySelectorAll('[name="' + name + '"]').forEach(
+          input => input.value = value
+        )
+
+        if (name !== 'hue') {
+          value = `${value}%`
+        }
+
+        colorSlot.style.setProperty(`--${name}`, value)
+
+        recomputeHEXValue(colorSlot)
+      })
+    }
+
+    const fillFromHEX = input => {
+      const colorSlot = input.parentElement.parentElement.parentElement;
+
+      input.addEventListener('input', e => {
+        const [h,s,l] = HEX2HSL(input.value);
+
+        colorSlot.style.setProperty('--hue', h);
+        colorSlot.style.setProperty('--saturation', s + '%');
+        colorSlot.style.setProperty('--lightness', l + '%');
+
+        colorSlot.querySelectorAll('input').forEach(el => {
+          if (el.name == 'hue') el.value = h;
+          if (el.name == 'saturation') el.value = s;
+          if (el.name == 'lightness') el.value = l;
+        })
+      })
+    }
+
+    document.querySelectorAll('[type="range"]').forEach(changeColor)
+    document.querySelectorAll('[type="number"]').forEach(changeColor)
+
+    document.querySelectorAll('[name="hex"]').forEach(fillFromHEX)
 
     const addColorSlot = event => {
-      const newSlot = event.target.parentElement.previousElementSibling.cloneNode('deep')
+      const slot = event.target.parentElement.previousElementSibling;
+      const newSlot = slot.cloneNode('deep')
+
+      newSlot.querySelectorAll('[type="range"]').forEach(changeColor)
+      newSlot.querySelectorAll('[type="number"]').forEach(changeColor)
+
+      newSlot.querySelectorAll('[name="hex"]').forEach(fillFromHEX)
+
       event.target.parentElement.parentElement.insertBefore(
         newSlot,
         event.target.parentElement
